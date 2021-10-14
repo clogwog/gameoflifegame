@@ -136,6 +136,8 @@ int main(int argc, char *argv[])
 		   cont = false;
 	   }
        }
+       canvas->Clear();
+       delete canvas;
 }
 
 
