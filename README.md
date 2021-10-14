@@ -9,3 +9,5 @@ ported it to c++ raspberry pi.
 
 
 ![small demo](https://github.com/clogwog/gameoflifegame/blob/master/life-finds-a-way.gif)
+
+[![Life...it. er. it finds a way](https://img.youtube.com/vi/1wdi3GYYUIM/0.jpg)](https://www.youtube.com/watch?v=1wdi3GYYUIM)
