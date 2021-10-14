@@ -39,7 +39,6 @@ using namespace std;
 #define D   A3
 #define crNum(x,y,z) ((x)+(y))%z
 //Animation Speed
-#define animationSpeed 75
 
 //How many loops before it checks if dead
 #define resetTime 100
@@ -70,6 +69,7 @@ int counter = 0;
 int cells[HEIGHT][WIDTH];
 int newCells[HEIGHT][WIDTH];
 int sum1 = 0;
+int animationSpeed=75;
 
 // forward delarations
 void setup();
@@ -81,8 +81,12 @@ void writeNextGeneration();
 
 int main(int argc, char *argv[])
 {
+	srand (time(NULL));
 	setlogmask (LOG_UPTO (LOG_NOTICE));
 	openlog ("gameoflife", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+
+	animationSpeed = rand() % 150 + 30;
+	cout << "speed " << animationSpeed << endl;
 
 	int maxtime = 0;
 	if ( argc > 1 )
@@ -109,7 +113,6 @@ int main(int argc, char *argv[])
 
 
         canvas = new RGBMatrix(&io, 32, 1);
-
 	bool cont = true;
 
 	time_t t = time(0);
@@ -117,7 +120,8 @@ int main(int argc, char *argv[])
 
 	setup();
 	while( cont )
-	{	
+	{
+	    t = time(0);
             loop();
             if (maxtime > 0 )
 	    {
@@ -126,16 +130,20 @@ int main(int argc, char *argv[])
 	          cont=false;
                   printf("stopping now\n");
                 }
-            }  
+            } 
+	   if (interrupt_received )
+	   {
+		   cont = false;
+	   }
        }
 }
 
 
 void setup() {
   //Color 
-  r = 1;
-  g = 0;
-  b = 0;
+  r = 100;
+  g = 100;
+  b = 100;
 
   //Create dead/alive cells
   //0 == Dead
@@ -169,7 +177,7 @@ void loop() {
   }
   
   update();
-  sleep(animationSpeed);
+  usleep(1000*animationSpeed);
   writeNextGeneration();
   
 
