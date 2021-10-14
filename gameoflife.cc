@@ -68,6 +68,7 @@ int r, g, b;
 int counter = 0;
 int cells[HEIGHT][WIDTH];
 int newCells[HEIGHT][WIDTH];
+int age[HEIGHT][WIDTH];
 int sum1 = 0;
 int animationSpeed=75;
 
@@ -151,9 +152,14 @@ void setup() {
   //0 == Dead
   //1 == Alive
 
-  for(unsigned int row = 0; row < WIDTH; row++) 
-      for(unsigned int col = 0; col < HEIGHT; cells[row][col++] = rand()%2);
-
+  for(unsigned int row = 0; row < WIDTH; row++)
+  { 
+      for(unsigned int col = 0; col < HEIGHT; col++)
+      {
+	      cells[row][col] = rand()%2;
+	      age[row][col] = 0;
+      }
+  }
 }
 
 void loop() {
@@ -223,7 +229,19 @@ void writeNextGeneration(){
     }
   }
   //copy new 2d Array to old
-  for(int row = 0; row < WIDTH; row++) for(int col = 0; col < HEIGHT; col++) cells[row][col] = newCells[row][col];
+  for(int row = 0; row < WIDTH; row++) for(int col = 0; col < HEIGHT; col++)
+  {
+      // keep track of the age of this pixel
+      if ( cells[row][col] == 1 && newCells[row][col] == 1 )
+      {
+    	age[row][col] = age[row][col] + 1;
+	if ( age[row][col] > 255 )
+		age[row][col] = 255;
+      }
+      else
+	age[row][col] = 0;      
+      cells[row][col] = newCells[row][col];
+  }
   
 }
 //Update pixels
@@ -231,7 +249,25 @@ void update(){
   for(unsigned int row = 0; row < WIDTH; row++)
     for(unsigned int col = 0; col < HEIGHT; col++)
       if ( cells[row][col] )
-	     canvas->SetPixel(row,col, r , g, b);
+      {
+	      float brightness = 0.5;
+	      float r = 0;
+	      float g = 255;
+	      float b = 255;
+	      float rn = 255;
+	      float gn = 102;
+	      float bn = 0;
+
+	      float tmp = (255-age[row][col])/255.0;
+	      float rt = (r-rn)* tmp;
+	      float gt = (g-gn)* tmp;
+	      float bt = (b-bn)* tmp;
+
+	      float rf = (r-rt)*brightness;
+	      float gf = (g-gt)*brightness;
+	      float bf = (b-bt)*brightness;
+	     canvas->SetPixel(row,col, rf , gf, bf);
+      }
       else
 	     canvas->SetPixel(row,col,0,0,0); 
 
