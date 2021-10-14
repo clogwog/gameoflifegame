@@ -1,6 +1,6 @@
 // Written by Caleb LaFeve 
 //Conway's game of life
-
+//modified for raspberrypi
 
 
 //Rules
@@ -9,7 +9,24 @@
 //    Any live cell with more than three live neighbors dies, as if by overpopulation.
 //    Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
 
-#include <RGBmatrixPanel.h>
+#include "led-matrix.h"
+#include "graphics.h"
+
+#include <unistd.h>
+#include <math.h>
+#include <stdio.h>
+#include <functional>
+#include <cstdlib>
+#include <iostream>
+#include <cstring>
+#include <ctime>
+#include <signal.h>
+#include <syslog.h>
+#include <sys/time.h>
+#include <random>
+
+
+using namespace std;
 
 #define CLK  8   // USE THIS ON ARDUINO UNO, ADAFRUIT METRO M0, etc.
 //#define CLK A4 // USE THIS ON METRO M4 (not M0)
@@ -33,15 +50,85 @@
 #define HEIGHT 32
 
 
-RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false);
-//May need to change the lines above if you're using a different board or LED matrix than the 32x32 
 
+using rgb_matrix::GPIO;
+using rgb_matrix::RGBMatrix;
+using rgb_matrix::Canvas;
+
+
+volatile bool interrupt_received = false;
+static void InterruptHandler(int signo) 
+{
+    syslog( LOG_NOTICE, "interrupt handler ");
+    interrupt_received = true;
+}
+
+
+Canvas *canvas;
 int r, g, b;
 int counter = 0;
 int cells[HEIGHT][WIDTH];
 int newCells[HEIGHT][WIDTH];
 int sum1 = 0;
 
+// forward delarations
+void setup();
+void loop();
+int  checkSum();
+void reset();
+void update();
+void writeNextGeneration();
+
+int main(int argc, char *argv[])
+{
+	setlogmask (LOG_UPTO (LOG_NOTICE));
+	openlog ("gameoflife", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+
+	int maxtime = 0;
+	if ( argc > 1 )
+	{
+	    string test(argv[1]);
+	    syslog( LOG_NOTICE, "running for %s seconds then quitting\n", test.c_str());
+	    maxtime = std::stoi( test );
+	 }
+
+	syslog( LOG_NOTICE, "gameoflife started pid: %d", getuid());
+	GPIO io;
+	if (!io.Init())
+		return 1;
+	std::string font_type = "./pongnumberfont.bdf";
+	rgb_matrix::Font font;
+        if (!font.LoadFont(font_type.c_str()))
+        {
+            cout <<  "Couldn't load font " << font_type << std::endl;
+            return 1;
+        }
+
+	signal(SIGTERM, InterruptHandler);
+	signal(SIGINT, InterruptHandler);
+
+
+        canvas = new RGBMatrix(&io, 32, 1);
+
+	bool cont = true;
+
+	time_t t = time(0);
+        time_t startTime = time(0);
+
+	setup();
+	while( cont )
+	{	
+            loop();
+            if (maxtime > 0 )
+	    {
+	        if( difftime(t,startTime) > maxtime)
+	        {
+	          cont=false;
+                  printf("stopping now\n");
+                }
+            }  
+       }
+}
 
 
 void setup() {
@@ -54,9 +141,8 @@ void setup() {
   //0 == Dead
   //1 == Alive
 
-  for(unsigned int row = 0; row < WIDTH; row++) for(unsigned int col = 0; col < HEIGHT; cells[row][col++] = random(0,2));
-  
-  matrix.begin();
+  for(unsigned int row = 0; row < WIDTH; row++) 
+      for(unsigned int col = 0; col < HEIGHT; cells[row][col++] = rand()%2);
 
 }
 
@@ -83,7 +169,7 @@ void loop() {
   }
   
   update();
-  delay(animationSpeed);
+  sleep(animationSpeed);
   writeNextGeneration();
   
 
@@ -94,8 +180,9 @@ int checkSum(){
   return sum;
 }
 //Resets 2D araay back to randomness
-void reset(){
-  for(unsigned int row = 0; row < WIDTH; row++) for(unsigned int col = 0; col < HEIGHT; cells[row][col++] = random(0,2));
+void reset()
+{
+  for(unsigned int row = 0; row < WIDTH; row++) for(unsigned int col = 0; col < HEIGHT; cells[row][col++] = rand()%2);
   counter=0;
 }
 //This method checks every cell(pixel) and check to see how many neighbors it has
@@ -111,7 +198,7 @@ void writeNextGeneration(){
     for(unsigned int col = 0; col < HEIGHT; col++){
       int surroundingCells = 0;
      
-      boolean isAlive=false;
+      bool isAlive=false;
 
       cells[row][col]?isAlive = true:isAlive = false;
       
@@ -132,10 +219,10 @@ void writeNextGeneration(){
 //Update pixels
 void update(){
   for(unsigned int row = 0; row < WIDTH; row++)
-    for(unsigned int col = 0; col < HEIGHT; col++) 
-      cells[row][col]?matrix.drawPixel(row, col, matrix.Color333(r, g,b)): matrix.drawPixel(row, col, matrix.Color333(0,0,0));
+    for(unsigned int col = 0; col < HEIGHT; col++)
+      if ( cells[row][col] )
+	     canvas->SetPixel(row,col, r , g, b);
+      else
+	     canvas->SetPixel(row,col,0,0,0); 
 
-        //Random colors/party mode ;)
-        //matrix.drawPixel(row, col, matrix.Color333(random(7), random(7),random(7)));
-        //If you uncomment the above line, make sure to comment the line below
 }
