@@ -1,5 +1,7 @@
 # gameoflife
 
+Demo: https://clogwog.net/projects/panel-player/?project=gameoflifegame
+
 Conway's game of life for raspberry pi
 
 This code was written for the 32x32 LED matrix for arduino by <a href="https://github.com/TechNerd1/gameoflifegame">https://github.com/TechNerd1/gameoflifegame</a>
